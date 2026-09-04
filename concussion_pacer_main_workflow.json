@@ -1,0 +1,377 @@
+{
+  "id": "ulYYEbb3ZW380DpE",
+  "name": "Concussion Recovery Pacer \u2014 Hack for Humanity 2026",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REPLACE_WITH_YOUR_GOOGLE_SHEET_ID"
+        },
+        "event": "rowAdded",
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Concussion_Checkin"
+        }
+      },
+      "id": "c7468201-97bb-4a75-8a94-bf51e0155bd1",
+      "name": "Daily Check-In Trigger",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 4,
+      "position": [
+        0,
+        176
+      ],
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const row=$input.first().json;\nconst patient_id=String(row.patient_id||'').trim();\nconst patient_email=String(row.patient_email||'').trim();\nconst day_number=parseInt(row.day_number)||1;\nconst symptom_score=parseFloat(row.symptom_score)||0;\nconst screen_hrs=parseFloat(row.screen_hrs)||0;\nconst sleep_hrs=parseFloat(row.sleep_hrs)||0;\nconst exercise_attempted=String(row.exercise_attempted||'no').toLowerCase().trim();\nconst vomiting=String(row.vomiting||'no').toLowerCase()==='yes';\nconst vision_changes=String(row.vision_changes||'no').toLowerCase()==='yes';\nconst notes=String(row.notes||'').trim();\nif(!patient_id)throw new Error('Missing patient_id');\nif(!patient_email)throw new Error('Missing patient_email');\nif(symptom_score<0||symptom_score>10)throw new Error('symptom_score must be 0-10');\nreturn[{json:{patient_id,patient_email,day_number,symptom_score,screen_hrs,sleep_hrs,exercise_attempted,vomiting,vision_changes,notes,received_at:new Date().toISOString()}}];"
+      },
+      "id": "7e6320f7-2899-481d-84d5-3e03ccff035e",
+      "name": "Input Validator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.symptom_score }}",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              },
+              "rightValue": 8,
+              "id": "high-symptom"
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "09992571-049d-404c-a8f6-433ddc3fab9e",
+      "name": "Red Flag Checker",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.patient_email }}",
+        "subject": "=\ud83d\udea8 CONCUSSION ALERT \u2014 Day {{ $json.day_number }}: Seek Care Now",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:600px;\"><div style=\"background:#C0431A;color:white;padding:20px;border-radius:8px 8px 0 0;\"><strong>\ud83d\udea8 Emergency \u2014 Seek Medical Care Immediately</strong><br><small>Symptom score: {{ $json.symptom_score }}/10 \u2014 above safe threshold</small></div><div style=\"padding:20px;border:1px solid #ddd;\"><p><strong>Your symptom score of {{ $json.symptom_score }}/10 requires immediate medical attention.</strong></p><p>Per CDC HEADS UP: seek emergency care for worsening headache, slurred speech, repeated vomiting, seizures, unequal pupils, extreme drowsiness.</p><p style=\"background:#fff3f0;padding:12px;border-radius:6px;border-left:4px solid #C0431A;\"><strong>Do not return to activity today.</strong> Contact your doctor or go to the nearest emergency room.</p><p>Emergency: 911 \u00b7 CDC HEADS UP: cdc.gov/headsup \u00b7 Concussion Alliance: concussionalliance.org</p><p style=\"color:#888;font-size:11px;\">Concussion Recovery Pacer | Day {{ $json.day_number }} | {{ $json.received_at }}</p></div></div>",
+        "options": {}
+      },
+      "id": "836010c1-75de-4a39-8431-5b9db053247f",
+      "name": "Emergency Alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1360,
+        0
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const d=$input.first().json;\nconsole.log('CHECKIN:',JSON.stringify({patient_id:d.patient_id,day:d.day_number,score:d.symptom_score}));\nreturn [{json:{...d,logged:true}}];"
+      },
+      "id": "5a60270b-5a63-452d-ab1b-11b0030e0ff9",
+      "name": "Log Check-In",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1584,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Patient check-in:\nPatient ID: {{ $json.patient_id }}\nRecovery Day: {{ $json.day_number }}\nSymptom Score: {{ $json.symptom_score }}/10\nScreen Time: {{ $json.screen_hrs }} hours\nSleep: {{ $json.sleep_hrs }} hours\nExercise Attempted: {{ $json.exercise_attempted }}\nNotes: {{ $json.notes }}\n\nCDC HEADS UP Return-to-Activity Stages:\n- Stage 1 (days 1-2, score 7-10): Complete rest. No screens, no exercise, no school.\n- Stage 2 (days 3-5, score 4-6): Light aerobic only. Walking 20-30 min. Stop if symptoms appear.\n- Stage 3 (days 6-8, score 2-4): Sport-specific exercise. No contact. Screen time 2 hrs max.\n- Stage 4 (days 9-12, score 0-2): Non-contact drills. Full school. Medical clearance for Stage 5.\n- Stage 5 (day 13+, score 0): Full return with medical clearance.\n\nDetermine the appropriate stage and generate a personalized daily recommendation. Output JSON with these exact fields: activity_level (rest/light/moderate/full), activity_label (e.g. Stage 2 - Light Aerobic), recommendation (2-3 sentences specific to today), protocol_stage (number 1-5), protocol_source (CDC HEADS UP Return-to-Activity), next_step (what to do tomorrow), encouragement (one uplifting sentence).",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "id": "95062e81-167b-4571-82b4-17fc1541da19",
+      "name": "Concussion Pacer Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        736,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o-mini"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "e1e0ecfc-8712-49cb-9a0d-8292865414c8",
+      "name": "GPT-4o-mini Pacer Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        672,
+        576
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_WITH_YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "retrieve_concussion_protocol",
+        "toolDescription": "Retrieve CDC HEADS UP and Buffalo Protocol return-to-activity guidelines.",
+        "memoryKey": "concussion_protocol_kb",
+        "topK": 2
+      },
+      "id": "c931542c-fec5-4fe2-ad3d-e9f7beb2560b",
+      "name": "Retrieve Concussion Protocol",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1,
+      "position": [
+        800,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "af443d5c-aed2-4d8f-9c6b-235d2ac7397b",
+      "name": "OpenAI Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        784
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_WITH_YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\"activity_level\":\"rest\",\"activity_label\":\"Stage 1 \u2014 Complete Rest\",\"recommendation\":\"No screens, no exercise, no school today.\",\"protocol_stage\":1,\"protocol_source\":\"CDC HEADS UP Return-to-Activity\",\"next_step\":\"If symptoms improve tomorrow, advance to Stage 2.\",\"encouragement\":\"Every day of rest is progress.\"}"
+      },
+      "id": "c984ca83-65bc-4f3d-9ded-537b59dd97c0",
+      "name": "Pacer Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1120,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const checkin=$('Input Validator').first().json;\nconst pacer=$input.first().json;\nconst output=pacer.output||pacer;\nconst stageBadgeColor={1:'#C0431A',2:'#E8640A',3:'#D4A520',4:'#0D6E58',5:'#1A3460'}[output.protocol_stage]||'#888880';\nconst activityIcon={'rest':'\ud83d\udecc','light':'\ud83d\udeb6','moderate':'\ud83c\udfc3','full':'\u2705'}[output.activity_level]||'\ud83d\udccb';\nreturn[{json:{patient_id:checkin.patient_id,patient_email:checkin.patient_email,day_number:checkin.day_number,symptom_score:checkin.symptom_score,activity_level:output.activity_level||'rest',activity_label:output.activity_label||'Stage 1 \u2014 Complete Rest',recommendation:output.recommendation||'',protocol_stage:output.protocol_stage||1,protocol_source:output.protocol_source||'CDC HEADS UP',next_step:output.next_step||'',encouragement:output.encouragement||'',stage_color:stageBadgeColor,activity_icon:activityIcon,generated_at:new Date().toISOString()}}];"
+      },
+      "id": "79184e2f-0b89-4b0a-8cb0-126bf2e7677f",
+      "name": "Build Recovery Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1136,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.patient_email }}",
+        "subject": "=\ud83e\udde0 Day {{ $json.day_number }} Recovery Update \u2014 {{ $json.activity_label }}",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:600px;\"><div style=\"background:{{ $json.stage_color }};color:white;padding:20px;border-radius:8px 8px 0 0;\"><strong>{{ $json.activity_icon }} Day {{ $json.day_number }} \u2014 {{ $json.activity_label }}</strong><br><small>Symptom Score: {{ $json.symptom_score }}/10 | {{ $json.protocol_source }}</small></div><div style=\"padding:20px;border:1px solid #ddd;\"><h3 style=\"color:#1A3460;margin-top:0;\">Today's Recommendation</h3><p style=\"font-size:14px;line-height:1.6;\">{{ $json.recommendation }}</p><hr style=\"border:none;border-top:1px solid #eee;margin:16px 0;\"><h3 style=\"color:#1A3460;\">What's Next</h3><p style=\"font-size:13px;color:#555;\">{{ $json.next_step }}</p><hr style=\"border:none;border-top:1px solid #eee;margin:16px 0;\"><p style=\"background:#f0f9f6;padding:12px;border-radius:6px;font-size:13px;color:#0D6E58;font-style:italic;\">\ud83d\udc9a {{ $json.encouragement }}</p><p style=\"font-size:11px;color:#888;\">Based on {{ $json.protocol_source }} \u00b7 Not medical advice \u00b7 Concussion Recovery Pacer | {{ $json.generated_at }}</p></div></div>",
+        "options": {}
+      },
+      "id": "adc0503c-8104-4f12-9052-7229afaba725",
+      "name": "Deliver Daily Summary",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1360,
+        352
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily Check-In Trigger": {
+      "main": [
+        [
+          {
+            "node": "Input Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Validator": {
+      "main": [
+        [
+          {
+            "node": "Red Flag Checker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Red Flag Checker": {
+      "main": [
+        [
+          {
+            "node": "Emergency Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Concussion Pacer Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Emergency Alert": {
+      "main": [
+        [
+          {
+            "node": "Log Check-In",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Concussion Pacer Agent": {
+      "main": [
+        [
+          {
+            "node": "Build Recovery Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT-4o-mini Pacer Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Concussion Pacer Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Concussion Protocol": {
+      "ai_tool": [
+        [
+          {
+            "node": "Concussion Pacer Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Retrieve Concussion Protocol",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pacer Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Concussion Pacer Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Recovery Email": {
+      "main": [
+        [
+          {
+            "node": "Deliver Daily Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deliver Daily Summary": {
+      "main": [
+        [
+          {
+            "node": "Log Check-In",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "id": "KN4xxwTCPT3j2lea",
+  "name": "Concussion Pacer \u2014 Seed Protocol KB",
+  "nodes": [
+    {
+      "id": "69d1f755-aea9-449b-8532-95b3b5c0f471",
+      "name": "Run Once \u2014 Seed Concussion KB",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        112
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "54eaba34-b3b6-419d-bdd7-9b63c0b0c6b5",
+      "name": "Concussion Protocol Documents",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        112
+      ],
+      "parameters": {
+        "jsCode": "return [\n  { json: { doc_id: 'CP-01', stage: 1, pageContent: 'CDC HEADS UP Stage 1 \u2014 Complete Rest. No screens, no physical activity, no school. Rest in quiet dark room. Duration: 24-48 hours minimum. Seek emergency care if headache worsens, vomiting, or vision changes.', source: 'CDC HEADS UP Return-to-Activity Protocol' } },\n  { json: { doc_id: 'CP-02', stage: 2, pageContent: 'CDC HEADS UP Stage 2 \u2014 Light Aerobic Activity. Walking, swimming, stationary cycling at low intensity. No resistance training. 20-30 minutes max. Stop if any symptoms appear. Screen time 30 min/session max.', source: 'CDC HEADS UP Return-to-Activity Protocol' } },\n  { json: { doc_id: 'CP-03', stage: 3, pageContent: 'CDC HEADS UP Stage 3 \u2014 Sport-Specific Exercise. Non-contact drills. No head impact. 30-45 minutes. Screen time 2 hrs max with breaks. Light academic work may resume. Buffalo Protocol: 20-min aerobic threshold test.', source: 'CDC HEADS UP + Buffalo Concussion Protocol' } },\n  { json: { doc_id: 'CP-04', stage: 4, pageContent: 'CDC HEADS UP Stage 4 \u2014 Non-Contact Training Drills. Full school and work. Resistance training resumes. Screen time unrestricted if symptom-free. Medical clearance required before advancing to Stage 5.', source: 'CDC HEADS UP Return-to-Activity Protocol' } },\n  { json: { doc_id: 'CP-05', stage: 5, pageContent: 'CDC HEADS UP Stage 5 \u2014 Full Return. Requires written medical clearance. Patient must be symptom-free 24+ hours. Buffalo Protocol treadmill test confirms readiness. No restrictions on activity.', source: 'CDC HEADS UP + Buffalo Concussion Protocol' } },\n  { json: { doc_id: 'CP-06', stage: 0, pageContent: 'CDC HEADS UP Red Flags \u2014 Emergency Signs. Seek care immediately: worsening headache, slurred speech, weakness, unequal pupils, extreme drowsiness, repeated vomiting, seizures. Call 911. May indicate blood clot or hemorrhage.', source: 'CDC HEADS UP Emergency Warning Signs' } }\n];"
+      }
+    },
+    {
+      "id": "8c844857-7d8a-4496-88f9-a43a5490df33",
+      "name": "Insert into Concussion KB",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1,
+      "position": [
+        448,
+        112
+      ],
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": "concussion_protocol_kb",
+        "clearStore": true
+      }
+    },
+    {
+      "id": "af443d5c-aed2-4d8f-9c6b-235d2ac7397b",
+      "name": "OpenAI Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        464,
+        336
+      ],
+      "parameters": {
+        "model": "text-embedding-3-small"
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_WITH_YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "id": "363e27b1-6056-41ed-b0a0-d72a91f6ac91",
+      "name": "JSON Document Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentJsonInputLoader",
+      "typeVersion": 1.1,
+      "position": [
+        592,
+        336
+      ],
+      "parameters": {
+        "pointerRi": "/pageContent"
+      }
+    },
+    {
+      "id": "f9f82aa9-e212-446e-975e-aeaadc0df53c",
+      "name": "Confirm KB Loaded",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        112
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{status:'Concussion Protocol KB seeded',store_key:'concussion_protocol_kb',documents_loaded:6,sources:['CDC HEADS UP','Buffalo Concussion Protocol'],seeded_at:new Date().toISOString()}}];"
+      }
+    }
+  ],
+  "connections": {
+    "Run Once \u2014 Seed Concussion KB": {
+      "main": [
+        [
+          {
+            "node": "Concussion Protocol Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Concussion Protocol Documents": {
+      "main": [
+        [
+          {
+            "node": "Insert into Concussion KB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert into Concussion KB": {
+      "main": [
+        [
+          {
+            "node": "Confirm KB Loaded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Insert into Concussion KB",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Document Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Insert into Concussion KB",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
