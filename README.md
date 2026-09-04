@@ -96,10 +96,3 @@ Toggle workflow active. Add a test row to the sheet. Within 60 seconds check inb
 ## n8n Workflow URLs
 - Main: https://udayshankar.app.n8n.cloud/workflow/ulYYEbb3ZW380DpE
 - Seed KB: https://udayshankar.app.n8n.cloud/workflow/KN4xxwTCPT3j2lea
-
-## Hackathon
-Hack for Humanity 2026 — Best Tech for Concussion Recovery + Best Use of AI/ML & Responsible AI
-
-## Author
-Uday Shankar Bhowal · Lead Analyst @ Cigna/Evernorth · MS Healthcare Informatics · Austin TX
-ORCID: 0009-0008-3908-5730
